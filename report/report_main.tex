@@ -1,0 +1,202 @@
+\documentclass{article}
+\usepackage{times}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{biblatex}
+\addbibresource{}
+%New colors defined below
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+%Code listing style named "mystyle"
+\lstdefinestyle{mystyle}{
+  backgroundcolor=\color{backcolour},   commentstyle=\color{codegreen},
+  keywordstyle=\color{magenta},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple},
+  basicstyle=\ttfamily\footnotesize,
+  breakatwhitespace=false,         
+  breaklines=true,                 
+  captionpos=b,                    
+  keepspaces=true,                 
+  numbers=left,                    
+  numbersep=5pt,                  
+  showspaces=false,                
+  showstringspaces=false,
+  showtabs=false,                  
+  tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\title{Antarctic Sea Ice Parameters: Spatial and Temporal Analysis}
+\author{Frida Alejandra Perez}
+\date{March 2020}
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Antarctic sea ice plays an important role in regulating the heat, moisture and moisture exchanges between the atmosphere and the ocean, and salinity of the ocean. Current studies of Antarctica confirm the area-integrated total sea ice extent grew to record maximum values in four of the last six years, whilst the 2016-17 summer has been marked by record low ice cover. The reasons for the variations in the sea ice extent are not fully understood. Given the important role of Antarctic sea ice; in this era of climate change it is vital to understand the factors contributing to its variability. Current work focuses on the sea ice concentration, which allows an understanding of the areal variation of the ice. The sea ice thickness (SIT) which allows an understanding of the variability of the volume of sea ice has not been explored to the same extent because there was a lack of data. This study uses a newly-released circumAntarctic SIT data set to examine the variability in Antarctic SIT and to investigate the relationships between the SIT and climatic variables such as surface air and ocean temperatures as well as convergence and divergence in ocean flows over a period of 2002-2011. This study gives a first look at the spatial and temporal variability of the SIT showing how it varies between the continent and sea-ice edge, with SIT favoring increase towards the landmass. Temporal variation shows maximum SIT values concentrated at the start of spring when the sea-ice accumulation is at its peak.
+\end{abstract}
+
+
+\section{Introduction}
+Antarctica has experienced different regional changes in the last ten years. Very different to what is happening in the Arctic, there has been an increase of sea ice concentration in the last decade. There is little research to why there has been an increase on the East Antarctica and more of a warming effect and decrease in sea ice in Western Antarctica. 
+
+ 
+\section{Methods}
+\subsection{Data}
+The data we used for this analysis are two different NetCDF files
+%Python code highlighting
+\begin{lstlisting}[language=Python]
+#!/usr/bin/env python3
+import netCDF4 as nc # handles netCDF files '.nc'
+import matplotlib.pylab as plt # plots data on graphs
+from mpl_toolkits.basemap import Basemap #gives basemap 
+import numpy as np   # deals with arrays and allows indexing
+import xarray as xr  # deals with four-dimensional arrays
+import pandas as pd  # use of data in dataframe format 
+from netCDF4 import Dataset  
+
+\end{lstlisting}
+
+Opening the two data sets using 'xarray', the reason being is it handles dates more efficiently 
+
+\begin{lstlisting}[language=Python]
+sit_file = '/Users/fridaperez/Developer/repos/eeb-c177-project/sit.nc'
+tmp_file = '/Users/fridaperez/Developer/repos/eeb-c177-project/air.nc'
+
+dset = xr.open_dataset(sit_file)
+cset = xr.open_dataset(tmp_file)
+
+print(dset)
+print(cset)
+\end{lstlisting}{}
+
+Opening the two data sets using netCDF to assign variables.  
+\begin{lstlisting}[language=Python]
+#Opening Sea Ice Thickness and Air Surface Temperature
+tmp_data = Dataset('air.mon.mean__M-O_2002-2011.nc')
+sea_data = Dataset('envisat_SIT_fb_snow-AMSR_sh_2002_2011_ease2_w50000.nc')
+
+
+# assigning the variables for Temperature
+lon_t = tmp_data.variables["lon"][:]
+lat_t = tmp_data.variables["lat"][:]
+level = tmp_data.variables["level"][:]
+air = tmp_data.variables["air"][:]
+tmp_time = tmp_data.variables["time"]
+
+# assigning the variables for SIT
+lon_sit = sea_data.variables["longitude"][:]
+lat_sit = sea_data.variables["latitude"][:]
+SIT = sea_data.variables["SIT"][:]
+SIT_time= sea_data.variables["time"]
+\end{lstlisting}{}
+
+
+\subsection{Air Surface Temperature}
+In order to explore the surface we take all the data at the 850 millibars for the latitude and longitude corresponding to the Antarctic Circle. 
+\begin{lstlisting}[language=Python]
+# Slicing the 'z' axis, to only get the mean surface temp at 850 hPa where most convergence occurs
+air_temp_at_surf=(air[:,2,:,:])
+print(air_temp_at_surf)
+#Finding index value of certain longitudes
+print(np.where(lon_t==-62.5))
+print(np.where(lon_t==-90))
+air_temp_at_surf.shape
+#Indexing to only get the Antarctic Circle
+antcircle=air_temp_at_surf[:,36:47,:]
+print(antcircle)
+\end{lstlisting}
+The data can then be plotted using the 'matplotlib' package. 
+%Python code highlighting
+\begin{lstlisting}[language=Python]
+avetemp_plot = plt.plot(air_mean) #we are assigning a plot for the mean air temperature
+plt.xlabel('Timesteps')           #labelling x-axis
+plt.ylabel('Temperature C')      #labelling y-axis
+plt.title('Global Surface Air Temperature ') #giving the plot a title
+plt.show
+
+#here we calculate the average air temperature using just the lat and lon of the Antarctic Circle
+ant_mean=[]
+for i in range(len(antcircle)):
+    mean = np.mean(antcircle[i])
+    ant_mean.append(mean)
+#plotting the results
+anttemp_plot = plt.plot(ant_mean)
+plt.xlabel('Timesteps')
+plt.ylabel('Temperature C')
+plt.title('Antarctic Circle Surface Air Temperature ')
+plt.show
+\end{lstlisting}
+
+\subsection{Sea Ice Thickness}
+\begin{lstlisting}[language=Python]
+def clim_plot(data):
+    m = Basemap(projection='spstere',boundinglat=-50,lon_0=90,resolution='l')
+    x, y = m(lon_sit, lat_sit )
+    fig = plt.figure(figsize=(15,7))
+    m.fillcontinents(color='white',lake_color='white')
+    m.drawcoastlines()
+    m.drawparallels(np.arange(-80.,81.,20.))
+    m.drawmeridians(np.arange(-180.,181.,20.))
+    m.drawmapboundary(fill_color='skyblue')
+    m.contourf(x,y,data,40,cmap=plt.cm.get_cmap('jet'))
+    plt.title('SIT')
+    plt.colorbar()
+\end{lstlisting}
+
+Getting averages for Sea Ice Thickness
+\begin{lstlisting}[language=Python]
+#to get the average sea ice thickness we must go through all the values and do so with a for loop
+#the reason 'np.nanmean' is used is to take an average of the array, but because values do not exist for every lat and lon for the array
+sit_mean=[]
+for y in range(len(SIT)):
+    mean = np.nanmean(SIT[y])
+    sit_mean.append(mean)
+print(sit_mean)
+\end{lstlisting}
+
+\subsection{Creating Seasonal Gradients}
+*in progress*
+\subsection{Trend Removal and Anomalies}
+*in progress*
+
+
+\section{Results}
+This section will discuss the results of the SIT and surface temperatures. This section is divided in three parts: 3.1 SIT variability, 3.2 Surface temperature variability, 3.3 SIT and surface temperature model 
+\subsection{SIT variability}
+\includegraphics[width=70mm]{SITmap.png}.
+\subsection{Surface temperature variability}
+\includegraphics[width=70mm]{global_tmp.png}.
+\subsection{SIT and surface temperature model }
+\includegraphics[width=70mm]{ant_temp.png}.
+
+
+
+
+
+
+\section{Discussion}
+The discussion will focus on how SIT varied over time and over the two months (Spring and Winter) which we have data for. How air surface temperature is correlated. What could this mean in the long term and what can we make of it to further understand the regional changes in Antarctica. 
+
+\section{Conclusion}
+We have investigated the the variability of SIT and the changes of surface temperature in response over time. 
+We first analyzed surface temperature over the last six years and the changes in temperature in Antarctica.\newline
+To investigate if temperature has an influence on SIT: \newline
+Some limitations we found: \newline
+Future Work:
+
+\bibliography{}
+
+
+
+\end{document}
