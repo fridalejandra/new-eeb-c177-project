@@ -102,7 +102,7 @@ SIT_time= sea_data.variables["time"]
 \end{lstlisting}{}
 
 
-\subsection{Air Surface Temperature}
+\subsection{Air Surface Temperature}\
 In order to explore the surface we take all the data at the 850 millibars for the latitude and longitude corresponding to the Antarctic Circle. 
 \begin{lstlisting}[language=Python]
 # Slicing the 'z' axis, to only get the mean surface temp at 850 hPa where most convergence occurs
@@ -165,8 +165,73 @@ for y in range(len(SIT)):
 print(sit_mean)
 \end{lstlisting}
 
-\subsection{Creating Seasonal Gradients}
-*in progress*
+To determine how SIT has varied over time (2002-2011), we graph the SIT means over the months May- October which constitutes Winter and Spring in the Southern Hemisphere, and we plot the values as a line for each year in R.
+
+\begin{lstlisting}[language=R]
+#Reading in csv that contains SIT averages over time
+sit_year<-read.csv("/Users/fridaperez/Desktop/sit_may_oct.csv")
+sit_year<-as.data.frame(sit_year) #converting to data frame
+print(sit_year)
+
+#plotting with ggplot2
+pp1<-ggplot(sit_year) + # data set to plot from 
+  geom_line(aes(x=sit_year$months, y=sit_year$X2003),color="tomato4", size=1)+ # plotting as a line all monthly values for specified year
+  geom_line(aes(x=sit_year$months, y=sit_year$X2004),color="limegreen", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2005),color="yellow", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2006),color="steelblue", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2007),color="purple", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2008),color="blue", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2009),color="indianred1", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2010),color="gray36", size=1)+
+  geom_line(aes(x=sit_year$months, y=sit_year$X2011),color="deeppink2", size=1)
+
+# Adding X and Y axis labels and a title to "pp2", a new plot 
+pp2<-pp1+ggtitle("Sea Ice Thickness") + scale_x_continuous(name = "May-October") + scale_y_continuous(name = "Sea Ice Thickness (in m)") 
+pp2
+\end{lstlisting}{}
+
+\subsection{Linear Model}
+In order to explore the possibility of an existing relationship between SIT and surface temperatures we ran a linear model to test the effects of SIT on temperature in Antarctica using the subset that was made for the Antarctic Circle from the Global Air Surface Temperature data set, by only selecting the latitudes from -60 to -90 and all the longitudes at 850 hPa. Once this gradient of the Southern Ocean was made in section 2.2, we then use the averaged sea ice thickness calculated in section 2.3 as the independent variable to predict surface temperatures. We perform the simple linear model in R. 
+
+\begin{lstlisting}[language=R]
+#installing packages to plot
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+
+#reading in the csv files
+sit_data<- read.csv("/Users/fridaperez/Desktop/sit_mean.csv")
+tmp_data<-read.csv("/Users/fridaperez/Desktop/ant_mean_new.csv")
+
+#creating the simple linear model
+dd <- data.frame(sit_data=unlist(sit_data),tmp_data=unlist(tmp_data)) #making a data frame with the two data sets
+lmmodelsit<- lm(tmp_data~sit_data,dd) #here we assign the linear model to "lmmodelsit"
+summary(lmmodelsit) # this command gives us the descriptive statistics
+
+# In order to get the linear regression, 
+sit<-unlist(sit_data) #unlist simplifies the list to produce all vectors
+tmp<-unlist(tmp_data)
+lm(formula = tmp~sit) #this command gives the coefficients for the formula 
+
+#Plotting and fitting the model 
+p1 <- ggplot(lmmodelsit,aes(x=sit, y=tmp)) + geom_point(shape=1) + #assigning lm to "p1" geom_smooth(method=lm)
+# Adding X and Y axis labels and a title to "p2", a new plot
+p2 <- p1 + scale_x_continuous(name = "Sea Ice Thickness (in m)") +
+    scale_y_continuous(name = "Surface Temperature (in F°)") + ggtitle("Surface Temperature Regression Line") 
+#Adding the R-sqaured, alpha, and beta to the plot
+p3<- p2+ annotate("text", x=1.45, y=-20.0, label = "R^2 == 0.69", parse=T) +
+      annotate("text", x=1.45, y=-20.45, label = "alpha == 0.00", parse=T) +
+      annotate("text", x=1.45, y=-20.90, label = "beta ==  -9.56", parse=T)
+p3 #final plot
+\end{lstlisting}
+
+To test if the SLR is a good fit and further evaluate the results of the linear regression we run the "autoplot" command in R, which allows us to analyze the residuals.
+\begin{lstlisting}[language=R]
+plt4<- autoplot(lmmodelsit,label.n = 0) 
+plt4
+\end{lstlisting}
+
+
 \subsection{Trend Removal and Anomalies}
 *in progress*
 
@@ -175,10 +240,16 @@ print(sit_mean)
 This section will discuss the results of the SIT and surface temperatures. This section is divided in three parts: 3.1 SIT variability, 3.2 Surface temperature variability, 3.3 SIT and surface temperature model 
 \subsection{SIT variability}
 \includegraphics[width=70mm]{SITmap.png}.
-\subsection{Surface temperature variability}
-\includegraphics[width=70mm]{global_tmp.png}.
+\subsection{SIT averaged values}
+\includegraphics[width=100mm]{SIT_means.png}
+\subsection{ Antarctic Surface temperature variability}
+\includegraphics[width=100mm]{ant_temp.png}.
 \subsection{SIT and surface temperature model }
-\includegraphics[width=70mm]{ant_temp.png}.
+\includegraphics[width=100mm]{SIT_Atmp_SLR.png}.
+\subsection{Residuals: Evaluating the SLR model}
+\includegraphics[width=100mm]{SLR_residuals.png}
+\subsection{Variation of monthly SIT values}
+\includegraphics[width=100mm]{SIT_yearly.png}
 
 
 
